@@ -16,8 +16,11 @@ public class EntryService {
 
     @Transactional
     public Entry createEntry(Entry entry) {
-        entityManager.persist(entry);
-        return entry;
+        if (this.isCheckinIsBeforeCheckout(entry)) {
+            entityManager.persist(entry);
+            return entry;
+        }
+        throw new IllegalArgumentException("Invalid date: Checkin is after Checkout.");
     }
 
     public List<Entry> findAll() {
@@ -28,12 +31,21 @@ public class EntryService {
     @Transactional
     public void delete(long id) {
         var entryToDelete = entityManager.find(Entry.class, id);
-        entityManager.remove(entryToDelete); 
+        entityManager.remove(entryToDelete);
     }
 
     @Transactional
     public Entry update(long id, Entry entry) {
-        entry.setId(id);
-        return entityManager.merge(entry);
+        if (this.isCheckinIsBeforeCheckout(entry)) {
+            entry.setId(id);
+            return entityManager.merge(entry);
+        }
+        throw new IllegalArgumentException("Invalid date: Checkin is after Checkout.");
+
     }
+
+    private boolean isCheckinIsBeforeCheckout(Entry entry) {
+        return entry.getCheckIn().isBefore(entry.getCheckOut());
+    }
+
 }
